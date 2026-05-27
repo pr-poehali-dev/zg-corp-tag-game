@@ -116,16 +116,30 @@ export default function GamePage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const getCanvasPos = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = W / rect.width;
-      const scaleY = H / rect.height;
-      mouseRef.current = {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY,
+      return {
+        x: (clientX - rect.left) * (W / rect.width),
+        y: (clientY - rect.top) * (H / rect.height),
       };
     };
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = getCanvasPos(e.clientX, e.clientY);
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const t = e.touches[0];
+      mouseRef.current = getCanvasPos(t.clientX, t.clientY);
+    };
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const t = e.touches[0];
+      mouseRef.current = getCanvasPos(t.clientX, t.clientY);
+      if (gameStateRef.current === 'idle') startGame();
+    };
     canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
 
     const drawGrid = () => {
       ctx.strokeStyle = 'rgba(0,0,0,0.04)';
@@ -265,11 +279,13 @@ export default function GamePage() {
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchstart', handleTouchStart);
     };
   }, [spawnEnemy, endGame]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-8 px-6">
+    <div className="flex-1 flex flex-col items-center justify-center py-4 sm:py-8 px-2 sm:px-6">
       {/* Canvas wrapper */}
       <div className="relative w-full max-w-[700px]">
         <canvas
@@ -278,7 +294,7 @@ export default function GamePage() {
           width={W}
           height={H}
           className="w-full border border-[#e0e0e0]"
-          style={{ aspectRatio: `${W}/${H}` }}
+          style={{ aspectRatio: `${W}/${H}`, touchAction: 'none' }}
         />
 
         {/* IDLE overlay */}
@@ -377,7 +393,7 @@ export default function GamePage() {
       {/* Controls hint */}
       {gameState === 'playing' && (
         <p className="font-mono text-xs text-[#cccccc] tracking-widest mt-4 uppercase animate-fade-in">
-          Двигай мышью — уходи от врагов
+          Веди пальцем / мышью — уходи от врагов
         </p>
       )}
     </div>

@@ -68,7 +68,7 @@ export default function FriendsPage({ currentUser, onStartGame }: Props) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 w-full">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full">
       {/* Header */}
       <div className="mb-8">
         <p className="font-mono text-[10px] text-[#888] tracking-[0.3em] uppercase mb-1">SOCIAL_01</p>
@@ -174,26 +174,29 @@ export default function FriendsPage({ currentUser, onStartGame }: Props) {
             Пока нет друзей — найди игрока выше
           </p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {friends.map(u => (
-              <div key={u.id} className="flex items-center justify-between py-2 border-b border-[#f0f0f0] last:border-0">
-                <div className="flex items-center gap-2">
+              <div key={u.id} className="py-3 border-b border-[#f0f0f0] last:border-0">
+                <div className="flex items-center gap-2 mb-2">
                   <div className="w-1.5 h-1.5 bg-green-500" />
                   <span className="font-rajdhani text-sm font-semibold text-[#0d0d0d] tracking-wider uppercase">
                     {u.username}
                   </span>
                 </div>
                 <div className="flex gap-2">
-                  {['chase', 'infection', 'dodgeball'].map(mode => (
+                  {[
+                    { mode: 'chase', label: 'Догонялки' },
+                    { mode: 'infection', label: 'Заражение' },
+                    { mode: 'dodgeball', label: 'Догомяч' },
+                  ].map(({ mode, label }) => (
                     <button
                       key={mode}
                       onClick={() => onStartGame(mode)}
-                      className="flex items-center gap-1.5 px-3 py-1 border border-[#e0e0e0] hover:border-[#0d0d0d] transition-colors group"
-                      title={mode === 'chase' ? 'Догонялки' : mode === 'infection' ? 'Заражение' : 'Догомяч'}
+                      className="flex items-center gap-1.5 px-2 sm:px-3 py-2 border border-[#e0e0e0] hover:border-[#0d0d0d] active:bg-[#0d0d0d] active:text-[#f5f5f5] transition-colors group flex-1 justify-center"
                     >
                       <Icon name="Gamepad2" size={12} />
                       <span className="font-mono text-[10px] text-[#888] group-hover:text-[#0d0d0d] tracking-widest uppercase transition-colors">
-                        {mode === 'chase' ? 'TAG' : mode === 'infection' ? 'INF' : 'BALL'}
+                        {label}
                       </span>
                     </button>
                   ))}

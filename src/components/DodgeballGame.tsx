@@ -129,26 +129,31 @@ export default function DodgeballGame() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const onMouseMove = (e: MouseEvent) => {
+    const getPos = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      mouseRef.current = {
-        x: (e.clientX - rect.left) * (W / rect.width),
-        y: (e.clientY - rect.top) * (H / rect.height),
-      };
+      return { x: (clientX - rect.left) * (W / rect.width), y: (clientY - rect.top) * (H / rect.height) };
     };
-
+    const onMouseMove = (e: MouseEvent) => { mouseRef.current = getPos(e.clientX, e.clientY); };
     const onClick = (e: MouseEvent) => {
-      if (stateRef.current !== 'playing') return;
-      if (!playerRef.current.isIt) return;
-      const rect = canvas.getBoundingClientRect();
-      clickRef.current = {
-        x: (e.clientX - rect.left) * (W / rect.width),
-        y: (e.clientY - rect.top) * (H / rect.height),
-      };
+      if (stateRef.current !== 'playing' || !playerRef.current.isIt) return;
+      clickRef.current = getPos(e.clientX, e.clientY);
     };
-
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      mouseRef.current = getPos(e.touches[0].clientX, e.touches[0].clientY);
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const pos = getPos(e.touches[0].clientX, e.touches[0].clientY);
+      mouseRef.current = pos;
+      if (stateRef.current === 'playing' && playerRef.current.isIt) {
+        clickRef.current = pos;
+      }
+    };
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('click', onClick);
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
 
     const drawGrid = () => {
       ctx.strokeStyle = 'rgba(0,0,0,0.035)';
@@ -525,18 +530,20 @@ export default function DodgeballGame() {
       cancelAnimationFrame(animRef.current);
       canvas.removeEventListener('mousemove', onMouseMove);
       canvas.removeEventListener('click', onClick);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchstart', onTouchStart);
     };
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-8 px-6">
+    <div className="flex-1 flex flex-col items-center justify-center py-4 sm:py-8 px-2 sm:px-6">
       <div className="relative w-full max-w-[700px]">
         <canvas
           ref={canvasRef}
           width={W}
           height={H}
           className="w-full border border-[#e0e0e0]"
-          style={{ aspectRatio: `${W}/${H}`, cursor: gameState === 'playing' && isPlayerIt ? 'crosshair' : 'none' }}
+          style={{ aspectRatio: `${W}/${H}`, cursor: gameState === 'playing' && isPlayerIt ? 'crosshair' : 'none', touchAction: 'none' }}
         />
 
         {/* IDLE */}

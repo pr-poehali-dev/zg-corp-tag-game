@@ -58,7 +58,7 @@ export default function MultiplayerLobby({ currentUser, initialMode, onJoined, o
   };
 
   return (
-    <div className="max-w-md mx-auto px-6 py-8 w-full">
+    <div className="max-w-md mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full">
       <button onClick={onBack} className="flex items-center gap-2 text-[#888] hover:text-[#0d0d0d] transition-colors mb-6">
         <Icon name="ArrowLeft" size={14} />
         <span className="font-mono text-xs tracking-widest uppercase">Назад</span>
@@ -90,12 +90,12 @@ export default function MultiplayerLobby({ currentUser, initialMode, onJoined, o
         {tab === 'create' && !waiting && (
           <>
             <p className="font-mono text-[10px] text-[#888] tracking-[0.2em] uppercase mb-3">Режим игры</p>
-            <div className="flex gap-2 mb-6">
+            <div className="grid grid-cols-3 gap-2 mb-6">
               {Object.entries(MODE_LABELS).map(([m, label]) => (
                 <button
                   key={m}
                   onClick={() => setSelectedMode(m)}
-                  className={`flex-1 py-2.5 font-mono text-[10px] tracking-widest uppercase border transition-colors ${
+                  className={`py-3 font-mono text-[10px] tracking-widest uppercase border transition-colors ${
                     selectedMode === m
                       ? 'bg-[#0d0d0d] text-[#f5f5f5] border-[#0d0d0d]'
                       : 'border-[#e0e0e0] text-[#888] hover:border-[#0d0d0d] hover:text-[#0d0d0d]'

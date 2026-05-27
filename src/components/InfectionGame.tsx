@@ -101,14 +101,16 @@ export default function InfectionGame() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const onMouseMove = (e: MouseEvent) => {
+    const getPos = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      mouseRef.current = {
-        x: (e.clientX - rect.left) * (W / rect.width),
-        y: (e.clientY - rect.top) * (H / rect.height),
-      };
+      return { x: (clientX - rect.left) * (W / rect.width), y: (clientY - rect.top) * (H / rect.height) };
     };
+    const onMouseMove = (e: MouseEvent) => { mouseRef.current = getPos(e.clientX, e.clientY); };
+    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); mouseRef.current = getPos(e.touches[0].clientX, e.touches[0].clientY); };
+    const onTouchStart = (e: TouchEvent) => { e.preventDefault(); mouseRef.current = getPos(e.touches[0].clientX, e.touches[0].clientY); };
     canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
 
     const drawGrid = () => {
       ctx.strokeStyle = 'rgba(0,0,0,0.04)';
@@ -372,18 +374,20 @@ export default function InfectionGame() {
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchstart', onTouchStart);
     };
   }, [endGame]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-8 px-6">
+    <div className="flex-1 flex flex-col items-center justify-center py-4 sm:py-8 px-2 sm:px-6">
       <div className="relative w-full max-w-[700px]">
         <canvas
           ref={canvasRef}
           width={W}
           height={H}
           className="w-full border border-[#e0e0e0]"
-          style={{ aspectRatio: `${W}/${H}`, cursor: 'crosshair' }}
+          style={{ aspectRatio: `${W}/${H}`, cursor: 'crosshair', touchAction: 'none' }}
         />
 
         {/* IDLE overlay */}
@@ -484,8 +488,8 @@ export default function InfectionGame() {
       {gameState === 'playing' && (
         <p className="font-mono text-xs text-[#cccccc] tracking-widest mt-4 uppercase animate-fade-in">
           {role === 'zombie'
-            ? 'Подходи к выжившим — заражай их'
-            : 'Избегай зомби — продержись 60 секунд'}
+            ? 'Веди пальцем / мышью — заражай выживших'
+            : 'Веди пальцем / мышью — продержись 60 секунд'}
         </p>
       )}
     </div>

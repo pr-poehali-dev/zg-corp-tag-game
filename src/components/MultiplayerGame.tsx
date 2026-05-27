@@ -76,29 +76,31 @@ export default function MultiplayerGame({ roomId, role, mode, currentUser, onBac
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const getPos = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      mouseRef.current = {
-        x: (e.clientX - rect.left) * (W / rect.width),
-        y: (e.clientY - rect.top) * (H / rect.height),
-      };
+      return { x: (clientX - rect.left) * (W / rect.width), y: (clientY - rect.top) * (H / rect.height) };
     };
-
-    const handleClick = (e: MouseEvent) => {
+    const shootBall = (cx: number, cy: number) => {
       if (mode !== 'dodgeball') return;
-      const rect = canvas.getBoundingClientRect();
-      const cx = (e.clientX - rect.left) * (W / rect.width);
-      const cy = (e.clientY - rect.top) * (H / rect.height);
       const p = myPosRef.current;
-      const dx = cx - p.x;
-      const dy = cy - p.y;
+      const dx = cx - p.x; const dy = cy - p.y;
       const d = Math.sqrt(dx * dx + dy * dy);
       if (d === 0) return;
       ballsRef.current.push({ x: p.x, y: p.y, vx: (dx / d) * 7, vy: (dy / d) * 7, id: ballIdRef.current++ });
     };
-
+    const handleMouseMove = (e: MouseEvent) => { mouseRef.current = getPos(e.clientX, e.clientY); };
+    const handleClick = (e: MouseEvent) => { const p = getPos(e.clientX, e.clientY); shootBall(p.x, p.y); };
+    const handleTouchMove = (e: TouchEvent) => { e.preventDefault(); mouseRef.current = getPos(e.touches[0].clientX, e.touches[0].clientY); };
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const pos = getPos(e.touches[0].clientX, e.touches[0].clientY);
+      mouseRef.current = pos;
+      shootBall(pos.x, pos.y);
+    };
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('click', handleClick);
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
 
     const drawGrid = () => {
       ctx.strokeStyle = 'rgba(0,0,0,0.04)';
@@ -241,6 +243,8 @@ export default function MultiplayerGame({ roomId, role, mode, currentUser, onBac
     return () => {
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('click', handleClick);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchstart', handleTouchStart);
       cancelAnimationFrame(animRef.current);
       if (pollRef.current) clearInterval(pollRef.current);
       if (pushRef.current) clearInterval(pushRef.current);
@@ -256,12 +260,12 @@ export default function MultiplayerGame({ roomId, role, mode, currentUser, onBac
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center py-6 px-4">
+    <div className="flex-1 flex flex-col items-center py-3 sm:py-6 px-2 sm:px-4">
       {/* Top bar */}
-      <div className="w-full max-w-[700px] flex items-center justify-between mb-4">
-        <button onClick={handleBack} className="flex items-center gap-2 text-[#888] hover:text-[#0d0d0d] transition-colors">
+      <div className="w-full max-w-[700px] flex items-center justify-between mb-3">
+        <button onClick={handleBack} className="flex items-center gap-1.5 text-[#888] hover:text-[#0d0d0d] transition-colors">
           <Icon name="ArrowLeft" size={14} />
-          <span className="font-mono text-xs tracking-widest uppercase">Выйти</span>
+          <span className="font-mono text-xs tracking-widest uppercase hidden sm:inline">Выйти</span>
         </button>
         <div className="text-center">
           <p className="font-mono text-[10px] text-[#888] tracking-[0.3em] uppercase">{MODE_LABELS[mode]}</p>
@@ -269,7 +273,7 @@ export default function MultiplayerGame({ roomId, role, mode, currentUser, onBac
             {opponentName ? `vs ${opponentName}` : 'Ожидание...'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <div className={`w-2 h-2 rounded-full ${status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-[#aaa]'}`} />
           <span className="font-mono text-[10px] text-[#888] tracking-widest uppercase">
             {status === 'playing' ? 'LIVE' : 'END'}
@@ -278,20 +282,20 @@ export default function MultiplayerGame({ roomId, role, mode, currentUser, onBac
       </div>
 
       {/* Role hint */}
-      <div className="w-full max-w-[700px] mb-3 flex items-center gap-3">
-        <div className={`w-3 h-3 rounded-full ${isChaser ? 'bg-[#e53935]' : 'bg-[#4CAF50]'}`} />
-        <span className="font-mono text-[10px] tracking-widest uppercase text-[#888]">
+      <div className="w-full max-w-[700px] mb-2 flex items-center gap-2">
+        <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isChaser ? 'bg-[#e53935]' : 'bg-[#4CAF50]'}`} />
+        <span className="font-mono text-[9px] sm:text-[10px] tracking-widest uppercase text-[#888] leading-tight">
           {mode === 'chase'
             ? (isChaser ? 'Ты догоняешь — поймай соперника' : 'Ты убегаешь — не дай себя поймать')
             : mode === 'infection'
             ? (isChaser ? 'Ты зомби — заразись о соперника' : 'Ты выживший — не дай себя заразить')
-            : (isChaser ? 'Кидай мячи кликом — попади в соперника' : 'Уворачивайся от мячей соперника')}
+            : (isChaser ? 'Тап/клик — бросить мяч, попади в соперника' : 'Уворачивайся от мячей соперника')}
         </span>
       </div>
 
       {/* Canvas */}
-      <div className="relative border border-[#e0e0e0]">
-        <canvas ref={canvasRef} width={W} height={H} className="block max-w-full" />
+      <div className="relative border border-[#e0e0e0] w-full max-w-[700px]">
+        <canvas ref={canvasRef} width={W} height={H} className="block w-full" style={{ aspectRatio: `${W}/${H}`, touchAction: 'none' }} />
 
         {/* Result overlay */}
         {status === 'finished' && (
@@ -312,7 +316,7 @@ export default function MultiplayerGame({ roomId, role, mode, currentUser, onBac
 
       {mode === 'dodgeball' && status === 'playing' && (
         <p className="font-mono text-[10px] text-[#aaa] tracking-widest mt-3 uppercase">
-          Клик на canvas — бросить мяч
+          Тап / клик — бросить мяч
         </p>
       )}
     </div>
