@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import GamePage from '@/components/GamePage';
 import InfectionGame from '@/components/InfectionGame';
+import DodgeballGame from '@/components/DodgeballGame';
 import AboutPage from '@/components/AboutPage';
 import RulesPage from '@/components/RulesPage';
 
-type Page = 'chase' | 'infection' | 'rules' | 'about';
+type Page = 'chase' | 'infection' | 'dodgeball' | 'rules' | 'about';
 
 const NAV: { id: Page; label: string; tag: string }[] = [
   { id: 'chase',     label: 'Догонялки',  tag: 'MODE_01' },
   { id: 'infection', label: 'Заражение',  tag: 'MODE_02' },
+  { id: 'dodgeball', label: 'Догомяч',    tag: 'MODE_03' },
   { id: 'rules',     label: 'Правила',    tag: '' },
   { id: 'about',     label: 'О проекте',  tag: '' },
 ];
@@ -52,6 +54,7 @@ export default function Index() {
       <main className="flex-1 flex flex-col">
         {activePage === 'chase'     && <GamePage />}
         {activePage === 'infection' && <InfectionGame />}
+        {activePage === 'dodgeball' && <DodgeballGame />}
         {activePage === 'rules'     && <RulesPage />}
         {activePage === 'about'     && <AboutPage />}
       </main>
