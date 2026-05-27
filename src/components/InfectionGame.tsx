@@ -7,6 +7,7 @@ type GameState = 'idle' | 'role_select' | 'playing' | 'gameover';
 interface Entity {
   x: number; y: number; vx: number; vy: number; size: number;
   infected: boolean; id: number; speed: number;
+  wanderAngle: number;
 }
 
 const W = 700;
@@ -56,6 +57,7 @@ export default function InfectionGame() {
         size: 8, infected,
         id: i,
         speed: 1.2 + Math.random() * 0.6,
+        wanderAngle: Math.random() * Math.PI * 2,
       });
     }
     return bots;
@@ -200,6 +202,8 @@ export default function InfectionGame() {
       botsRef.current.forEach((bot) => {
         let fx = 0, fy = 0;
 
+        const FLEE_RADIUS = 120; // реагируют только на близкие угрозы
+
         if (bot.infected) {
           // Zombie bot: chase nearest survivor
           let nearest: Entity | null = null;
@@ -210,7 +214,6 @@ export default function InfectionGame() {
               if (d < nearestDist) { nearestDist = d; nearest = other; }
             }
           });
-          // Also chase player if survivor
           if (role === 'survivor') {
             const dp = Math.hypot(p.x - bot.x, p.y - bot.y);
             if (dp < nearestDist) { nearest = p; nearestDist = dp; }
@@ -222,47 +225,73 @@ export default function InfectionGame() {
             if (fd > 0) { fx /= fd; fy /= fd; }
           }
         } else {
-          // Survivor bot: flee from nearest zombie
-          let nearest: Entity | null = null;
-          let nearestDist = Infinity;
+          // Survivor bot: wander + flee threats in radius
+          // 1. Wander — постоянное плавное блуждание
+          bot.wanderAngle += (Math.random() - 0.5) * 0.4;
+          const wanderStrength = 0.5;
+          fx += Math.cos(bot.wanderAngle) * wanderStrength;
+          fy += Math.sin(bot.wanderAngle) * wanderStrength;
+
+          // 2. Flee threats within radius
+          let fleeX = 0, fleeY = 0;
+          let threatened = false;
           botsRef.current.forEach((other) => {
-            if (other.infected) {
-              const d = Math.hypot(other.x - bot.x, other.y - bot.y);
-              if (d < nearestDist) { nearestDist = d; nearest = other; }
+            if (!other.infected) return;
+            const d = Math.hypot(other.x - bot.x, other.y - bot.y);
+            if (d < FLEE_RADIUS && d > 0) {
+              const weight = (FLEE_RADIUS - d) / FLEE_RADIUS; // ближе = сильнее
+              fleeX += ((bot.x - other.x) / d) * weight;
+              fleeY += ((bot.y - other.y) / d) * weight;
+              threatened = true;
             }
           });
-          // Flee player if zombie
           if (role === 'zombie') {
             const dp = Math.hypot(p.x - bot.x, p.y - bot.y);
-            if (dp < nearestDist) { nearest = p; nearestDist = dp; }
+            if (dp < FLEE_RADIUS && dp > 0) {
+              const weight = (FLEE_RADIUS - dp) / FLEE_RADIUS;
+              fleeX += ((bot.x - p.x) / dp) * weight;
+              fleeY += ((bot.y - p.y) / dp) * weight;
+              threatened = true;
+            }
           }
-          if (nearest) {
-            fx = bot.x - nearest.x;
-            fy = bot.y - nearest.y;
-            const fd = Math.hypot(fx, fy);
-            if (fd > 0) { fx /= fd; fy /= fd; }
+          if (threatened) {
+            fx = fleeX * 2.5; // бегут быстрее при угрозе
+            fy = fleeY * 2.5;
           }
+
+          // 3. Wall repulsion — плавно отворачивают от стен
+          const wallMargin = 60;
+          if (bot.x < wallMargin)       fx += (wallMargin - bot.x) / wallMargin * 1.5;
+          if (bot.x > W - wallMargin)   fx -= (bot.x - (W - wallMargin)) / wallMargin * 1.5;
+          if (bot.y < wallMargin)       fy += (wallMargin - bot.y) / wallMargin * 1.5;
+          if (bot.y > H - wallMargin)   fy -= (bot.y - (H - wallMargin)) / wallMargin * 1.5;
         }
 
-        // Separation from other bots
+        // Separation from all bots
         botsRef.current.forEach((other) => {
           if (other.id === bot.id) return;
           const sd = Math.hypot(bot.x - other.x, bot.y - other.y);
-          if (sd < 24 && sd > 0) {
-            fx += ((bot.x - other.x) / sd) * 0.4;
-            fy += ((bot.y - other.y) / sd) * 0.4;
+          if (sd < 22 && sd > 0) {
+            fx += ((bot.x - other.x) / sd) * 0.6;
+            fy += ((bot.y - other.y) / sd) * 0.6;
           }
         });
 
-        bot.vx = bot.vx * 0.85 + fx * bot.speed * 0.15;
-        bot.vy = bot.vy * 0.85 + fy * bot.speed * 0.15;
+        // Smoother inertia for survivors, snappier for zombies
+        const inertia = bot.infected ? 0.8 : 0.88;
+        bot.vx = bot.vx * inertia + fx * bot.speed * (1 - inertia);
+        bot.vy = bot.vy * inertia + fy * bot.speed * (1 - inertia);
         const spd = Math.hypot(bot.vx, bot.vy);
         if (spd > bot.speed) { bot.vx = (bot.vx / spd) * bot.speed; bot.vy = (bot.vy / spd) * bot.speed; }
 
         bot.x += bot.vx;
         bot.y += bot.vy;
-        bot.x = Math.max(bot.size, Math.min(W - bot.size, bot.x));
-        bot.y = Math.max(bot.size, Math.min(H - bot.size, bot.y));
+        // Hard clamp (last resort)
+        bot.x = Math.max(bot.size + 2, Math.min(W - bot.size - 2, bot.x));
+        bot.y = Math.max(bot.size + 2, Math.min(H - bot.size - 2, bot.y));
+        // Bounce off walls to break out of corners
+        if (bot.x <= bot.size + 2 || bot.x >= W - bot.size - 2) bot.vx *= -0.6;
+        if (bot.y <= bot.size + 2 || bot.y >= H - bot.size - 2) bot.vy *= -0.6;
       });
 
       // Infection spread between bots
