@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GamePage from '@/components/GamePage';
 import InfectionGame from '@/components/InfectionGame';
 import DodgeballGame from '@/components/DodgeballGame';
 import AboutPage from '@/components/AboutPage';
 import RulesPage from '@/components/RulesPage';
+import AuthModal from '@/components/AuthModal';
+import Icon from '@/components/ui/icon';
 
 type Page = 'chase' | 'infection' | 'dodgeball' | 'rules' | 'about';
 
@@ -17,6 +19,15 @@ const NAV: { id: Page; label: string; tag: string }[] = [
 
 export default function Index() {
   const [activePage, setActivePage] = useState<Page>('chase');
+  const [showAuth, setShowAuth] = useState(false);
+  const [user, setUser] = useState<{ username: string } | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('zg_user');
+    if (saved) { try { setUser(JSON.parse(saved)); } catch (e) { void e; } }
+  }, []);
+
+  const logout = () => { localStorage.removeItem('zg_user'); setUser(null); };
 
   const activeTag = NAV.find(n => n.id === activePage)?.tag ?? '';
 
@@ -47,6 +58,33 @@ export default function Index() {
               </button>
             ))}
           </nav>
+
+          {/* Auth */}
+          <div className="flex items-center gap-3">
+            {user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 border border-[#e0e0e0]">
+                  <div className="w-1.5 h-1.5 bg-[#0d0d0d]" />
+                  <span className="font-mono text-xs text-[#0d0d0d] tracking-wider uppercase">
+                    {user.username}
+                  </span>
+                </div>
+                <button onClick={logout} className="text-[#aaa] hover:text-[#0d0d0d] transition-colors" title="Выйти">
+                  <Icon name="LogOut" size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuth(true)}
+                className="flex items-center gap-2 px-3 py-1.5 border border-[#e0e0e0] hover:border-[#0d0d0d] transition-colors group"
+              >
+                <Icon name="User" size={13} />
+                <span className="font-mono text-xs text-[#888] group-hover:text-[#0d0d0d] tracking-wider uppercase transition-colors">
+                  Войти
+                </span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -70,6 +108,13 @@ export default function Index() {
           </span>
         </div>
       </footer>
+
+      {showAuth && (
+        <AuthModal
+          onSuccess={(username) => { setUser({ username }); setShowAuth(false); }}
+          onClose={() => setShowAuth(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS t_p22480343_zg_corp_tag_game.users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(32) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
