@@ -1,12 +1,22 @@
 import { useState } from 'react';
 import GamePage from '@/components/GamePage';
+import InfectionGame from '@/components/InfectionGame';
 import AboutPage from '@/components/AboutPage';
 import RulesPage from '@/components/RulesPage';
 
-type Page = 'game' | 'about' | 'rules';
+type Page = 'chase' | 'infection' | 'rules' | 'about';
+
+const NAV: { id: Page; label: string; tag: string }[] = [
+  { id: 'chase',     label: 'Догонялки',  tag: 'MODE_01' },
+  { id: 'infection', label: 'Заражение',  tag: 'MODE_02' },
+  { id: 'rules',     label: 'Правила',    tag: '' },
+  { id: 'about',     label: 'О проекте',  tag: '' },
+];
 
 export default function Index() {
-  const [activePage, setActivePage] = useState<Page>('game');
+  const [activePage, setActivePage] = useState<Page>('chase');
+
+  const activeTag = NAV.find(n => n.id === activePage)?.tag ?? '';
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] font-rajdhani flex flex-col">
@@ -21,17 +31,17 @@ export default function Index() {
           </div>
 
           <nav className="flex items-center gap-8">
-            {(['game', 'rules', 'about'] as Page[]).map((page) => (
+            {NAV.map(({ id, label }) => (
               <button
-                key={page}
-                onClick={() => setActivePage(page)}
+                key={id}
+                onClick={() => setActivePage(id)}
                 className={`zg-nav-link text-sm font-medium tracking-widest uppercase pb-0.5 transition-colors ${
-                  activePage === page
+                  activePage === id
                     ? 'text-[#0d0d0d] active'
                     : 'text-[#888888] hover:text-[#0d0d0d]'
                 }`}
               >
-                {page === 'game' ? 'Игра' : page === 'rules' ? 'Правила' : 'О проекте'}
+                {label}
               </button>
             ))}
           </nav>
@@ -40,9 +50,10 @@ export default function Index() {
 
       {/* Content */}
       <main className="flex-1 flex flex-col">
-        {activePage === 'game' && <GamePage />}
-        {activePage === 'rules' && <RulesPage />}
-        {activePage === 'about' && <AboutPage />}
+        {activePage === 'chase'     && <GamePage />}
+        {activePage === 'infection' && <InfectionGame />}
+        {activePage === 'rules'     && <RulesPage />}
+        {activePage === 'about'     && <AboutPage />}
       </main>
 
       {/* Footer */}
@@ -52,7 +63,7 @@ export default function Index() {
             ZG CORP © 2026
           </span>
           <span className="font-mono text-xs text-[#cccccc] tracking-wider">
-            MODE_01 / CHASE
+            {activeTag || 'ZG CORP'}
           </span>
         </div>
       </footer>
