@@ -6,7 +6,7 @@ const AUTH_URL = 'https://functions.poehali.dev/b2c68a88-0478-42e4-bb1b-191c4c8b
 type Mode = 'login' | 'register';
 
 interface Props {
-  onSuccess: (username: string) => void;
+  onSuccess: (username: string, userId: number) => void;
   onClose: () => void;
 }
 
@@ -31,7 +31,7 @@ export default function AuthModal({ onSuccess, onClose }: Props) {
         setError(data.error || 'Что-то пошло не так');
       } else {
         localStorage.setItem('zg_user', JSON.stringify({ username: data.username, userId: data.userId }));
-        onSuccess(data.username);
+        onSuccess(data.username, data.userId);
       }
     } catch {
       setError('Ошибка соединения');

@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "Search users",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "search", "userId": 1, "query": "test"},
+      "expectedStatus": 200,
+      "expectedBody": {"users": []},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "List friends",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "list", "userId": 1},
+      "expectedStatus": 200,
+      "expectedBody": {"friends": [], "incoming": []},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing userId",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "list"},
+      "expectedStatus": 400,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

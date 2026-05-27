@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Create room",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "create", "userId": 1, "mode": "chase"},
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true, "role": "host"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Join invalid code",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "join", "userId": 1, "code": "XXXXXX"},
+      "expectedStatus": 404,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing userId",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "create"},
+      "expectedStatus": 400,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
